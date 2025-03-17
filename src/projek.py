@@ -146,7 +146,7 @@ def generate_population_and_replace_old(chromosomes):
     i=1
     while len(new_chromosomes) < max_population:
         print("ITERASI KE=" + str(i))
-        chromosome1, chromosome2 = select_chromosomes_to_pair(chromosomes, 0.2)
+        chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.1)
         anak = crossover(chromosome1, chromosome2)
         mutant = mutasi(anak)
         print("MUTANT=", mutant, 'FC=', calc_fitness(mutant))  # Print in console
@@ -158,5 +158,5 @@ def generate_population_and_replace_old(chromosomes):
     return new_chromosomes
 
 chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-for i in range(10):
+for i in range(50): # Coba run 50 generasi
     chromosomes = generate_population_and_replace_old(chromosomes)
