@@ -12,7 +12,7 @@ units = [
 ]
 jumlah_periode = 6
 
-total_mw = sum([unit['kapasitas'] for unit in units])
+total_mw = sum([unit['kapasitas'] for unit in units]) # 150
 rekomendasi_mwatt = 115 # Fitness cost prioritas
 minimal_mwatt = 100 # Fitness cost sekondari
 
@@ -20,8 +20,9 @@ weight_fc_prioritas = 3
 weight_fc_sekondari = 1
 weight_fc_buruk = -10
 
-populasi_awal = 50
-max_population = 50
+populasi_awal = 10
+max_population = 20
+generasi = 10
 
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
@@ -50,11 +51,11 @@ def calc_fitness(chromosome):
         for unit_id in units_dalam_periode:
             sisa_mw -= units[unit_id-1]['kapasitas']
         if sisa_mw >= rekomendasi_mwatt:
-            fc += 3
+            fc += weight_fc_prioritas
         elif sisa_mw >= minimal_mwatt:
-            fc += 1
+            fc += weight_fc_sekondari
         else:
-            fc -= 10
+            fc += weight_fc_buruk
     return fc
 
 
@@ -67,12 +68,13 @@ def selection_roulette_wheel(chromosomes, amount_to_select):
     """
     chromosomes_fitness = [[chromosome, calc_fitness(chromosome)] for chromosome in chromosomes]
     chromosomes_fitness.sort(key=lambda x: x[1])
-    print(chromosomes_fitness)
+    # print(chromosomes_fitness)
     negative_amount = 0
     if chromosomes_fitness[0][1] <= 0:
         negative_amount = abs(chromosomes_fitness[0][1]) + 1
     fitness_costs = [fc + negative_amount for chromosome, fc in chromosomes_fitness]
     total_fitness = sum(fitness_costs)
+    # print(total_fitness)
 
     selected = []
     for i in range(int(amount_to_select)):
@@ -125,28 +127,30 @@ def mutasi(chromosome):
     chromosome[angka_random[1]] = temp
     if units[angka_random[0]]['interval'] == 2:
         if chromosome[angka_random[0]] == 6:
-            chromosome[angka_random[0]] = rand.randint(0, jumlah_periode - 2)
+            chromosome[angka_random[0]] = rand.randint(1, jumlah_periode - 1)
     if units[angka_random[1]]['interval'] == 2:
         if chromosome[angka_random[1]] == 6:
-            chromosome[angka_random[1]] = rand.randint(0, jumlah_periode - 2)
+            chromosome[angka_random[1]] = rand.randint(1, jumlah_periode - 1)
     return chromosome
 
 def generate_population_and_replace_old(chromosomes):
     chromosomes_fitness = [[chromosome, calc_fitness(chromosome)] for chromosome in chromosomes]
     chromosomes_fitness.sort(key=lambda x: x[1], reverse=True)
-    if chromosomes_fitness[0][1] >= 19:
+
+    if chromosomes_fitness[0][1] >= 16:
         print("Telah ketemu chromosome terbaik yaitu", chromosomes_fitness[0][0], "dengan fitness cost", chromosomes_fitness[0][1])
-        return
+        return chromosomes
 
     print('----- NEW GENERATION -----')
     # List chromosomes baru diambil dari 50% list chromosomes lama pakai roulette wheel selection
     new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes)/2)
+    print(new_chromosomes)
 
     # Sisanya di pilih 2 parent, di crossover, di mutasi, repeat hingga populasi baru mencapai max_population
     i=1
     while len(new_chromosomes) < max_population:
         print("ITERASI KE=" + str(i))
-        chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.1)
+        chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.2)
         anak = crossover(chromosome1, chromosome2)
         mutant = mutasi(anak)
         print("MUTANT=", mutant, 'FC=', calc_fitness(mutant))  # Print in console
@@ -158,5 +162,5 @@ def generate_population_and_replace_old(chromosomes):
     return new_chromosomes
 
 chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-for i in range(50): # Coba run 50 generasi
+for i in range(10): # Coba run 50 generasi
     chromosomes = generate_population_and_replace_old(chromosomes)
