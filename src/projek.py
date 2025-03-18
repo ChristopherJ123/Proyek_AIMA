@@ -13,17 +13,17 @@ units = [
 jumlah_periode = 6
 
 total_mw = sum([unit['kapasitas'] for unit in units]) # 150
-rekomendasi_mwatt = 115 # Fitness cost prioritas
-minimal_mwatt = 100 # Fitness cost sekondari
+rekomendasi_mwatt = 115 # Syarat fitness cost prioritas
+minimal_mwatt = 100 # Syarat fitness cost sekondari
 
-weight_fc_prioritas = 3
-weight_fc_sekondari = 1
-weight_fc_buruk = -10
+weight_fc_prioritas = 3 # Fitness cost prioritas
+weight_fc_sekondari = 1 # Fitness cost sekondari
+weight_fc_buruk = -10 # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
-populasi_awal = 40
-max_population = 20
-generasi = 30
+populasi_awal = 50
+max_population = 50
+generasi = 10
 
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
@@ -162,7 +162,19 @@ def generate_population_and_replace_old(chromosomes):
         i += 1
     return new_chromosomes
 
+# Contoh sederhana 2 parent only
+# chrom1 = [1, 2, 3, 1, 2, 3, 4]
+# chrom2 = [4, 5, 6, 4, 5, 6, 4]
+# print("PARENT A=", chrom1)
+# print("PARENT B=", chrom2)
+# anak = crossover(chrom1, chrom2)
+# print("HASIL CROSSOVER=", anak)
+# for i in range(10):
+#     print("MUTASI KE-" + str(i))
+#     mutated = mutasi(anak)
+#     print("HASIL MUTASI=", mutated)
+
 chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-for i in range(generasi): # Coba run 50 generasi
+for i in range(generasi): # Coba run x generasi
     print("Generasi ke-" + str(i), end=" ")
     chromosomes = generate_population_and_replace_old(chromosomes)
