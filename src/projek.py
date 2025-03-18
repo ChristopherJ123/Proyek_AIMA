@@ -20,9 +20,10 @@ weight_fc_prioritas = 3
 weight_fc_sekondari = 1
 weight_fc_buruk = -10
 
-populasi_awal = 10
+# Main2 di parameter sini ya guys
+populasi_awal = 40
 max_population = 20
-generasi = 10
+generasi = 30
 
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
@@ -162,5 +163,6 @@ def generate_population_and_replace_old(chromosomes):
     return new_chromosomes
 
 chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-for i in range(10): # Coba run 50 generasi
+for i in range(generasi): # Coba run 50 generasi
+    print("Generasi ke-" + str(i), end=" ")
     chromosomes = generate_population_and_replace_old(chromosomes)
