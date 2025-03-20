@@ -16,14 +16,14 @@ total_mw = sum([unit['kapasitas'] for unit in units]) # 150
 rekomendasi_mwatt = 115 # Syarat fitness cost prioritas
 minimal_mwatt = 100 # Syarat fitness cost sekondari
 
-weight_fc_prioritas = 3 # Fitness cost prioritas
-weight_fc_sekondari = 1 # Fitness cost sekondari
+initial_weight_fc_prioritas = 3 # Fitness cost prioritas
+initial_weight_fc_sekondari = 1 # Fitness cost sekondari
 weight_fc_buruk = -10 # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
 populasi_awal = 50
 max_population = 50
-generasi = 10
+generasi = 25
 
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
@@ -51,12 +51,21 @@ def calc_fitness(chromosome):
         sisa_mw = total_mw
         for unit_id in units_dalam_periode:
             sisa_mw -= units[unit_id-1]['kapasitas']
-        if sisa_mw >= rekomendasi_mwatt:
-            fc += weight_fc_prioritas
-        elif sisa_mw >= minimal_mwatt:
-            fc += weight_fc_sekondari
-        else:
-            fc += weight_fc_buruk
+        if sisa_mw >= rekomendasi_mwatt: # For first priority fitness
+            mw_kelebihan = sisa_mw - rekomendasi_mwatt
+            max_to_priority_delta = total_mw - rekomendasi_mwatt
+            gene_fc = initial_weight_fc_prioritas
+            gene_fc -= (mw_kelebihan) * initial_weight_fc_prioritas / max_to_priority_delta
+            fc += gene_fc
+        elif sisa_mw >= minimal_mwatt: # For secondary priority fitness
+            mw_kelebihan = sisa_mw - minimal_mwatt
+            primary_to_secondary_delta = rekomendasi_mwatt - minimal_mwatt
+            gene_fc = initial_weight_fc_sekondari
+            gene_fc += mw_kelebihan * (initial_weight_fc_prioritas - initial_weight_fc_sekondari) / primary_to_secondary_delta
+            fc += gene_fc
+        else: # For bad fitness
+            gene_fc = weight_fc_buruk
+            fc += gene_fc
     return fc
 
 
@@ -119,19 +128,16 @@ def crossover(chromosome1, chromosome2):  # Single point crossover
 
 def mutasi(chromosome):
     while True:
-        angka_random = rand.sample(range(0, 7), 2)
-        if ((chromosome[angka_random[0]] != 6 or units[angka_random[0]]['interval'] != 2) and
-            (chromosome[angka_random[1]] != 6 or units[angka_random[1]]['interval'] != 2)):
+        unit_random1, unit_random2 = rand.sample(range(0, 7), 2)
+        if (chromosome[unit_random1] == 6 and units[unit_random2]['interval'] == 2) or \
+            (chromosome[unit_random2] == 6 and units[unit_random1]['interval'] == 2):
+            continue
+        else:
             break
-    temp = chromosome[angka_random[0]]
-    chromosome[angka_random[0]] = chromosome[angka_random[1]]
-    chromosome[angka_random[1]] = temp
-    if units[angka_random[0]]['interval'] == 2:
-        if chromosome[angka_random[0]] == 6:
-            chromosome[angka_random[0]] = rand.randint(1, jumlah_periode - 1)
-    if units[angka_random[1]]['interval'] == 2:
-        if chromosome[angka_random[1]] == 6:
-            chromosome[angka_random[1]] = rand.randint(1, jumlah_periode - 1)
+    # print("Switching", unit_random1+1, "with", unit_random2+1)
+    temp = chromosome[unit_random1]
+    chromosome[unit_random1] = chromosome[unit_random2]
+    chromosome[unit_random2] = temp
     return chromosome
 
 def generate_population_and_replace_old(chromosomes):
@@ -163,18 +169,18 @@ def generate_population_and_replace_old(chromosomes):
     return new_chromosomes
 
 # Contoh sederhana 2 parent only
-# chrom1 = [1, 2, 3, 1, 2, 3, 4]
-# chrom2 = [4, 5, 6, 4, 5, 6, 4]
-# print("PARENT A=", chrom1)
-# print("PARENT B=", chrom2)
-# anak = crossover(chrom1, chrom2)
-# print("HASIL CROSSOVER=", anak)
-# for i in range(10):
+chrom1 = [1, 1, 3, 4, 5, 5, 6]
+# print(calc_fitness(chrom1))
+# for i in range(25):
 #     print("MUTASI KE-" + str(i))
-#     mutated = mutasi(anak)
+#     mutated = mutasi(chrom1)
 #     print("HASIL MUTASI=", mutated)
 
-chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-for i in range(generasi): # Coba run x generasi
-    print("Generasi ke-" + str(i), end=" ")
-    chromosomes = generate_population_and_replace_old(chromosomes)
+for i in range(15):
+    chromosome = make_random_chromosome()
+    print("i=", i+1, "CHROMOSOME=", chromosome, 'FC=', calc_fitness(chromosome))
+
+# chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
+# for i in range(generasi): # Coba run x generasi
+#     print("Generasi ke-" + str(i+1), end=" ")
+#     chromosomes = generate_population_and_replace_old(chromosomes)
