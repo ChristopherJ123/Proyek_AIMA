@@ -1,5 +1,7 @@
 import random as rand
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 units = [
     {'kapasitas': 20, 'interval': 2},
@@ -23,7 +25,7 @@ weight_fc_buruk = -10 # Fitness cost buruk
 # Main2 di parameter sini ya guys
 populasi_awal = 50
 max_population = 50
-generasi = 25
+generasi = 100
 
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
@@ -86,20 +88,38 @@ def selection_roulette_wheel(chromosomes, amount_to_select):
     total_fitness = sum(fitness_costs)
     # print(total_fitness)
 
-    selected = []
+    new_chromosomes = []
     for i in range(int(amount_to_select)):
-        random_fitness = rand.randint(0, total_fitness)
+        random_fitness = rand.uniform(0, total_fitness)
         # print("Random from", 0, total_fitness, "got", random_fitness)
         cumulative_fitness = 0
 
         for i in range(len(fitness_costs)):
             cumulative_fitness += fitness_costs[i]
             if cumulative_fitness >= random_fitness:
-                selected.append(chromosomes_fitness[i][0])
+                new_chromosomes.append(chromosomes_fitness[i][0])
                 # print("SELECTED", chromosomes_fitness[i][0], "FC=", chromosomes_fitness[i][1])
                 break
         # print(cumulative_fitness)
-    return selected
+    return new_chromosomes
+
+
+def selection_tournament(chromosomes, amount_to_select, tournament_size=3):
+    """
+    Seleksi/filter dari seluruh populasi chromosomes dengan cara Roulette Wheel Selection
+    :param chromosomes: List chromosomes
+    :param amount_to_select: Jumlah chromosomes yang akan di seleksi
+    :param tournament_size: Jumlah chromosomes yang akan di tandingkan dengan satu sama lainnya
+    :return: Chromosomes baru dengan jumlah amount_to_select yang sudah di seleksi
+    """
+    new_chromosomes = []
+    while len(new_chromosomes) < amount_to_select:
+        random_chromosomes = rand.sample(chromosomes, tournament_size)
+        random_chromosomes_fitness = [[chromosome, calc_fitness(chromosome)] for chromosome in random_chromosomes]
+        best_chromosome = max(random_chromosomes_fitness, key=lambda x: x[1])
+        new_chromosomes.append(best_chromosome[0])
+        chromosomes.pop(chromosomes.index(best_chromosome[0]))
+    return new_chromosomes
 
 
 def select_chromosomes_to_pair(chromosomes, best_percentage):
@@ -146,9 +166,8 @@ def generate_population_and_replace_old(chromosomes):
 
     if chromosomes_fitness[0][1] >= 16:
         print("Telah ketemu chromosome terbaik yaitu", chromosomes_fitness[0][0], "dengan fitness cost", chromosomes_fitness[0][1])
-        return chromosomes
+        return chromosomes, True
 
-    print('----- NEW GENERATION -----')
     # List chromosomes baru diambil dari 50% list chromosomes lama pakai roulette wheel selection
     new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes)/2)
     print(new_chromosomes)
@@ -166,21 +185,65 @@ def generate_population_and_replace_old(chromosomes):
         chromosomes_fc.sort(key=lambda x: x[1], reverse=True)
         print("BEST=", chromosomes_fc[0][0], "FC=", chromosomes_fc[0][1])
         i += 1
-    return new_chromosomes
+    return new_chromosomes, False
 
-# Contoh sederhana 2 parent only
-chrom1 = [1, 1, 3, 4, 5, 5, 6]
+# # Contoh sederhana 2 parent only
+# chrom1 = [1, 1, 3, 4, 5, 5, 6]
 # print(calc_fitness(chrom1))
 # for i in range(25):
 #     print("MUTASI KE-" + str(i))
 #     mutated = mutasi(chrom1)
 #     print("HASIL MUTASI=", mutated)
+#
+# for i in range(15):
+#     chromosome = make_random_chromosome()
+#     print("i=", i+1, "CHROMOSOME=", chromosome, 'FC=', calc_fitness(chromosome))
 
-for i in range(15):
-    chromosome = make_random_chromosome()
-    print("i=", i+1, "CHROMOSOME=", chromosome, 'FC=', calc_fitness(chromosome))
+# chromosomes = [make_random_chromosome() for _ in range(10)]
+# print(chromosomes)
+# selection_tournament(chromosomes, 5)
+# print(chromosomes)
 
-# chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-# for i in range(generasi): # Coba run x generasi
-#     print("Generasi ke-" + str(i+1), end=" ")
-#     chromosomes = generate_population_and_replace_old(chromosomes)
+
+chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
+end = False
+for i in range(generasi): # Coba run x generasi
+    if not end:
+        print("GENERASI KE-" + str(i+1), end=" ")
+
+        # Matplotlib section
+        fig, ax = plt.subplots()
+        bins = np.arange(-20, 18, 1)
+
+        fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
+
+        n, bins, patches = ax.hist(fitnesses, bins=bins)
+
+        for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
+            if 16 <= bin_edge < 17:
+                patch.set_facecolor('gold')  # Change color of specific bars
+
+        ax.set_xlabel('Fitness')
+        ax.set_ylabel('Frequency')
+        ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i+1))
+
+        plt.savefig('generated/chromosomes_fitness_generation_' + str(i+1) + '.png')
+        # Matplotlib section end
+
+        chromosomes, end = generate_population_and_replace_old(chromosomes)
+
+if end:
+    bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+    print("JADWAL MAINTENANCE PEMBANGKIT LISTRIK SELAMA 1 TAHUN")
+    best_chromosome = chromosomes[0]
+
+    data = []
+    for index, gene in enumerate(best_chromosome):
+        maintenance_1 = bulan[gene - 1]  # First maintenance month
+        maintenance_2 = bulan[gene + 6 - 1]  # Second maintenance month
+        data.append([f"Pembangkit Listrik Unit {index + 1}", maintenance_1, maintenance_2])
+
+    # Make DataFrame
+    df = pd.DataFrame(data, columns=['Unit', 'Maintenance 1', 'Maintenance 2'])
+
+    print(df)
