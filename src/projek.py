@@ -14,58 +14,61 @@ units = [
 ]
 jumlah_periode = 6
 
-total_mw = sum([unit['kapasitas'] for unit in units]) # 150
-rekomendasi_mwatt = 115 # Syarat fitness cost prioritas
-minimal_mwatt = 100 # Syarat fitness cost sekondari
+total_mw = sum([unit['kapasitas'] for unit in units])  # 150
+rekomendasi_mwatt = 115  # Syarat fitness cost prioritas
+minimal_mwatt = 100  # Syarat fitness cost sekondari
 
-initial_weight_fc_prioritas = 3 # Fitness cost prioritas
-initial_weight_fc_sekondari = 1 # Fitness cost sekondari
-weight_fc_buruk = -10 # Fitness cost buruk
+initial_weight_fc_prioritas = 3  # Fitness cost prioritas
+initial_weight_fc_sekondari = 1  # Fitness cost sekondari
+weight_fc_buruk = -10  # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
 populasi_awal = 50
 max_population = 50
 generasi = 100
 
+
 def make_random_chromosome():
     unit_ids = [i for i in range(len(units))]
     chromosome = [i for i in range(len(units))]
-    while len(unit_ids) > 0: # Assign unit 1-7 ke periode 1-6 yang di random
+    while len(unit_ids) > 0:  # Assign unit 1-7 ke periode 1-6 yang di random
         unit_id = unit_ids.pop(0)
         if units[unit_id]['interval'] == 1:
             periode = rand.randint(0, jumlah_periode - 1)
-            chromosome[unit_id] = periode+1
+            chromosome[unit_id] = periode + 1
         elif units[unit_id]['interval'] == 2:
             periode = rand.randint(0, jumlah_periode - 2)
-            chromosome[unit_id]=periode+1
+            chromosome[unit_id] = periode + 1
     return chromosome
+
 
 def calc_fitness(chromosome):
     fc = 0
-    chromosome_inverted = [[] for _ in range(jumlah_periode)] # Invert chromosome to make it easier to iterate
+    chromosome_inverted = [[] for _ in range(jumlah_periode)]  # Invert chromosome to make it easier to iterate
     for unit_id in range(len(chromosome)):
         if units[unit_id]['interval'] == 1:
-            chromosome_inverted[chromosome[unit_id]-1].append(unit_id+1)
+            chromosome_inverted[chromosome[unit_id] - 1].append(unit_id + 1)
         elif units[unit_id]['interval'] == 2:
-            chromosome_inverted[chromosome[unit_id]-1].append(unit_id+1)
-            chromosome_inverted[int(chromosome[unit_id])].append(unit_id+1)
+            chromosome_inverted[chromosome[unit_id] - 1].append(unit_id + 1)
+            chromosome_inverted[int(chromosome[unit_id])].append(unit_id + 1)
     for units_dalam_periode in chromosome_inverted:
         sisa_mw = total_mw
         for unit_id in units_dalam_periode:
-            sisa_mw -= units[unit_id-1]['kapasitas']
-        if sisa_mw >= rekomendasi_mwatt: # For first priority fitness
+            sisa_mw -= units[unit_id - 1]['kapasitas']
+        if sisa_mw >= rekomendasi_mwatt:  # For first priority fitness
             mw_kelebihan = sisa_mw - rekomendasi_mwatt
             max_to_priority_delta = total_mw - rekomendasi_mwatt
             gene_fc = initial_weight_fc_prioritas
             gene_fc -= (mw_kelebihan) * initial_weight_fc_prioritas / max_to_priority_delta
             fc += gene_fc
-        elif sisa_mw >= minimal_mwatt: # For secondary priority fitness
+        elif sisa_mw >= minimal_mwatt:  # For secondary priority fitness
             mw_kelebihan = sisa_mw - minimal_mwatt
             primary_to_secondary_delta = rekomendasi_mwatt - minimal_mwatt
             gene_fc = initial_weight_fc_sekondari
-            gene_fc += mw_kelebihan * (initial_weight_fc_prioritas - initial_weight_fc_sekondari) / primary_to_secondary_delta
+            gene_fc += mw_kelebihan * (
+                        initial_weight_fc_prioritas - initial_weight_fc_sekondari) / primary_to_secondary_delta
             fc += gene_fc
-        else: # For bad fitness
+        else:  # For bad fitness
             gene_fc = weight_fc_buruk
             fc += gene_fc
     return fc
@@ -137,6 +140,7 @@ def select_chromosomes_to_pair(chromosomes, best_percentage):
     chromosome2 = rand.choice(chromosomes_fitness[:best_percentage])
     return chromosome1[0], chromosome2[0]
 
+
 def crossover(chromosome1, chromosome2):  # Single point crossover
     anak = []
     crossover_point = rand.randint(1, jumlah_periode - 1)
@@ -146,39 +150,105 @@ def crossover(chromosome1, chromosome2):  # Single point crossover
         anak.append(chromosome2[i])
     return anak
 
-def mutasi(chromosome):
+
+def mutation_swap(chromosome):
+    """
+    Memilih dua gene dalam kromosom secara acak dan menukarkan posisi keduanya.
+    :param chromosome: Chromosome
+    :return: Mutated Chromosome
+    """
     while True:
         unit_random1, unit_random2 = rand.sample(range(0, 7), 2)
         if (chromosome[unit_random1] == 6 and units[unit_random2]['interval'] == 2) or \
-            (chromosome[unit_random2] == 6 and units[unit_random1]['interval'] == 2):
+                (chromosome[unit_random2] == 6 and units[unit_random1]['interval'] == 2):
             continue
         else:
             break
-    # print("Switching", unit_random1+1, "with", unit_random2+1)
     temp = chromosome[unit_random1]
     chromosome[unit_random1] = chromosome[unit_random2]
     chromosome[unit_random2] = temp
     return chromosome
+
+
+def mutation_add_subtract_single(chromosome):
+    """
+    Memilih satu gene dalam kromosom secara acak dan melakukan adding atau substracting.
+    :param chromosome: Chromosome
+    :return: Mutated Chromosome
+    """
+    random = rand.randint(0, 6)
+    dobel_interval = False
+    if units[random]['interval'] == 2:
+        dobel_interval = True
+
+    nilai_baru = chromosome[random]
+    plus_minus = rand.randint(0, 1)
+    if plus_minus == 0:
+        nilai_baru -= 1
+    else:
+        nilai_baru += 1
+    if dobel_interval and nilai_baru > 5:
+        nilai_baru -= 5
+    elif dobel_interval and nilai_baru < 1:
+        nilai_baru += 5
+    elif not dobel_interval and nilai_baru > 6:
+        nilai_baru -= 6
+    elif not dobel_interval and nilai_baru < 1:
+        nilai_baru += 6
+    chromosome[random] = nilai_baru
+    return chromosome
+
+
+def mutation_add_subtract_double(chromosome):
+    """
+    Mengubah dua gene random dengan metode adding pada gene pertama dan subtract pada gene kedua pada sebuah chromosome.
+    :param chromosome: Chromosome
+    :return: Mutated Chromosome
+    """
+    random = rand.sample(range(0, 6), 2)
+
+    for i in range(2):
+        dobel_interval = False
+        if units[random[i]]['interval'] == 2:
+            dobel_interval = True
+
+        nilai_baru = chromosome[random[i]]
+        if i == 0:
+            nilai_baru += 1
+        else:
+            nilai_baru -= 1
+        if dobel_interval and nilai_baru > 5:
+            nilai_baru -= 5
+        elif dobel_interval and nilai_baru < 1:
+            nilai_baru += 5
+        elif not dobel_interval and nilai_baru > 6:
+            nilai_baru -= 6
+        elif not dobel_interval and nilai_baru < 1:
+            nilai_baru += 6
+        chromosome[random[i]] = nilai_baru
+    return chromosome
+
 
 def generate_population_and_replace_old(chromosomes):
     chromosomes_fitness = [[chromosome, calc_fitness(chromosome)] for chromosome in chromosomes]
     chromosomes_fitness.sort(key=lambda x: x[1], reverse=True)
 
     if chromosomes_fitness[0][1] >= 16:
-        print("Telah ketemu chromosome terbaik yaitu", chromosomes_fitness[0][0], "dengan fitness cost", chromosomes_fitness[0][1])
+        print("Telah ketemu chromosome terbaik yaitu", chromosomes_fitness[0][0], "dengan fitness cost",
+              chromosomes_fitness[0][1])
         return chromosomes, True
 
     # List chromosomes baru diambil dari 50% list chromosomes lama pakai roulette wheel selection
-    new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes)/2)
-    print(new_chromosomes)
+    new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes) / 2)
+    print("ROULETTE WHEEL SELECTIONS =", new_chromosomes)
 
     # Sisanya di pilih 2 parent, di crossover, di mutasi, repeat hingga populasi baru mencapai max_population
-    i=1
+    i = 1
     while len(new_chromosomes) < max_population:
         print("ITERASI KE=" + str(i))
         chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.2)
         anak = crossover(chromosome1, chromosome2)
-        mutant = mutasi(anak)
+        mutant = mutation_add_subtract_single(anak)
         print("MUTANT=", mutant, 'FC=', calc_fitness(mutant))  # Print in console
         new_chromosomes.append(mutant)
         chromosomes_fc = [[chromosome, calc_fitness(chromosome)] for chromosome in new_chromosomes]
@@ -187,12 +257,13 @@ def generate_population_and_replace_old(chromosomes):
         i += 1
     return new_chromosomes, False
 
-# # Contoh sederhana 2 parent only
+
+# Contoh sederhana 2 parent only
 # chrom1 = [1, 1, 3, 4, 5, 5, 6]
 # print(calc_fitness(chrom1))
 # for i in range(25):
 #     print("MUTASI KE-" + str(i))
-#     mutated = mutasi(chrom1)
+#     mutated = mutation_add_subtract_single(chrom1)
 #     print("HASIL MUTASI=", mutated)
 #
 # for i in range(15):
@@ -204,46 +275,63 @@ def generate_population_and_replace_old(chromosomes):
 # selection_tournament(chromosomes, 5)
 # print(chromosomes)
 
+def initialize():
+    chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
+    end = False
+    for i in range(generasi):  # Coba run x generasi
+        if not end:
+            print("GENERASI KE-" + str(i + 1), end=" ")
 
-chromosomes = [make_random_chromosome() for _ in range(populasi_awal)]
-end = False
-for i in range(generasi): # Coba run x generasi
-    if not end:
-        print("GENERASI KE-" + str(i+1), end=" ")
+            # Matplotlib section
+            fig, ax = plt.subplots()
+            bins = np.arange(-20, 18, 1)
 
-        # Matplotlib section
-        fig, ax = plt.subplots()
-        bins = np.arange(-20, 18, 1)
+            fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
 
-        fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
+            n, bins, patches = ax.hist(fitnesses, bins=bins)
 
-        n, bins, patches = ax.hist(fitnesses, bins=bins)
+            for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
+                if 16 <= bin_edge < 17:
+                    patch.set_facecolor('gold')  # Change color of specific bars
 
-        for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
-            if 16 <= bin_edge < 17:
-                patch.set_facecolor('gold')  # Change color of specific bars
+            ax.set_xlabel('Fitness')
+            ax.set_ylabel('Frequency')
+            ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i + 1))
 
-        ax.set_xlabel('Fitness')
-        ax.set_ylabel('Frequency')
-        ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i+1))
+            plt.savefig('generated/chromosomes_fitness_generation_' + str(i + 1) + '.png')
+            plt.close()
+            # Matplotlib section end
 
-        plt.savefig('generated/chromosomes_fitness_generation_' + str(i+1) + '.png')
-        # Matplotlib section end
+            chromosomes, end = generate_population_and_replace_old(chromosomes)
 
-        chromosomes, end = generate_population_and_replace_old(chromosomes)
+    if end:
+        bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober',
+                 'November', 'Desember']
+        print("JADWAL MAINTENANCE PEMBANGKIT LISTRIK SELAMA 1 TAHUN")
+        best_chromosome = chromosomes[0]
 
-if end:
-    bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'July', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-    print("JADWAL MAINTENANCE PEMBANGKIT LISTRIK SELAMA 1 TAHUN")
-    best_chromosome = chromosomes[0]
+        data = []
+        for index, gene in enumerate(best_chromosome):
+            maintenance_1 = bulan[gene - 1]  # First maintenance month
+            maintenance_2 = bulan[gene + 6 - 1]  # Second maintenance month
+            if units[index]['interval'] == 2:
+                maintenance_1 += " & " + bulan[gene]
+                maintenance_2 += " & " + bulan[gene + 6]
+            data.append([f"Pembangkit Listrik Unit {index + 1}", maintenance_1, maintenance_2])
 
-    data = []
-    for index, gene in enumerate(best_chromosome):
-        maintenance_1 = bulan[gene - 1]  # First maintenance month
-        maintenance_2 = bulan[gene + 6 - 1]  # Second maintenance month
-        data.append([f"Pembangkit Listrik Unit {index + 1}", maintenance_1, maintenance_2])
+        # Make DataFrame
+        df = pd.DataFrame(data, columns=['Unit', 'Maintenance 1', 'Maintenance 2'])
 
-    # Make DataFrame
-    df = pd.DataFrame(data, columns=['Unit', 'Maintenance 1', 'Maintenance 2'])
+        print(df)
+        return True
+    return False
 
-    print(df)
+initialize()
+
+# Testing failure rate untuk 100 test run case (Untuk mengecek mutasi order changing, add subtract single/double)
+# failure_rate = 0
+# for i in range(100):
+#     success = initialize()
+#     if not success:
+#         failure_rate += 1
+# print(failure_rate)
