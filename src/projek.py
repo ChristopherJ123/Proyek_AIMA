@@ -23,8 +23,8 @@ initial_weight_fc_sekondari = 1  # Fitness cost sekondari
 weight_fc_buruk = -10  # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
-populasi_awal = 50
-max_population = 50
+populasi_awal = 40
+max_population = 20
 generasi = 100
 
 
@@ -229,6 +229,22 @@ def mutation_add_subtract_double(chromosome):
     return chromosome
 
 
+def mutation_random_gene(chromosome):
+    """
+        Mengubah satu gene secara acak dengan dan di random valuenya (Mengikuti contraint sebuah gene).
+        :param chromosome: Chromosome
+        :return: Mutated Chromosome
+    """
+    random = rand.randint(0, 6)
+    if units[random]['interval'] == 2:
+        random_value = rand.randint(1, 5)
+        chromosome[random] = random_value
+    elif units[random]['interval'] == 1:
+        random_value = rand.randint(1, 6)
+        chromosome[random] = random_value
+    return chromosome
+
+
 def generate_population_and_replace_old(chromosomes):
     chromosomes_fitness = [[chromosome, calc_fitness(chromosome)] for chromosome in chromosomes]
     chromosomes_fitness.sort(key=lambda x: x[1], reverse=True)
@@ -248,7 +264,7 @@ def generate_population_and_replace_old(chromosomes):
         print("ITERASI KE=" + str(i))
         chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.2)
         anak = crossover(chromosome1, chromosome2)
-        mutant = mutation_add_subtract_single(anak)
+        mutant = mutation_random_gene(anak)
         print("MUTANT=", mutant, 'FC=', calc_fitness(mutant))  # Print in console
         new_chromosomes.append(mutant)
         chromosomes_fc = [[chromosome, calc_fitness(chromosome)] for chromosome in new_chromosomes]
