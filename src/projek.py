@@ -23,8 +23,8 @@ initial_weight_fc_sekondari = 1  # Fitness cost sekondari
 weight_fc_buruk = -10  # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
-populasi_awal = 40
-max_population = 20
+populasi_awal = 50
+max_population = 50
 generasi = 100
 
 
@@ -141,13 +141,26 @@ def select_chromosomes_to_pair(chromosomes, best_percentage):
     return chromosome1[0], chromosome2[0]
 
 
-def crossover(chromosome1, chromosome2):  # Single point crossover
+def crossover_single_point(chromosome1, chromosome2): # Single point crossover
     anak = []
     crossover_point = rand.randint(1, jumlah_periode - 1)
     for i in range(crossover_point):
         anak.append(chromosome1[i])
     for i in range(crossover_point, 7):
         anak.append(chromosome2[i])
+    return anak
+
+
+def crossover_double_point(chromosome1, chromosome2): # Double point crossover by Rayner
+    anak = []
+    crossover_points = sorted(rand.sample(range(1, 7), 2))
+
+    for i in range(crossover_points[0]):
+        anak.append(chromosome1[i])
+    for i in range(crossover_points[0], crossover_points[1]):
+        anak.append(chromosome2[i])
+    for i in range(crossover_points[1], 7):
+        anak.append(chromosome1[i])
     return anak
 
 
@@ -254,16 +267,17 @@ def generate_population_and_replace_old(chromosomes):
               chromosomes_fitness[0][1])
         return chromosomes, True
 
-    # List chromosomes baru diambil dari 50% list chromosomes lama pakai roulette wheel selection
-    new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes) / 2)
-    print("ROULETTE WHEEL SELECTIONS =", new_chromosomes)
+    # List chromosomes baru diambil dari 50% list chromosomes lama pakai tournament selection
+    # new_chromosomes = selection_roulette_wheel(chromosomes, len(chromosomes) / 2) # Gunakan ini untuk roulette wheel selection
+    new_chromosomes = selection_tournament(chromosomes, len(chromosomes) / 2) # Gunakan ini untuk tournament selection
+    print("TOURNAMENT SELECTIONS =", new_chromosomes)
 
     # Sisanya di pilih 2 parent, di crossover, di mutasi, repeat hingga populasi baru mencapai max_population
     i = 1
     while len(new_chromosomes) < max_population:
         print("ITERASI KE=" + str(i))
         chromosome1, chromosome2 = select_chromosomes_to_pair(new_chromosomes, 0.2)
-        anak = crossover(chromosome1, chromosome2)
+        anak = crossover_single_point(chromosome1, chromosome2)
         mutant = mutation_random_gene(anak)
         print("MUTANT=", mutant, 'FC=', calc_fitness(mutant))  # Print in console
         new_chromosomes.append(mutant)
@@ -299,23 +313,23 @@ def initialize():
             print("GENERASI KE-" + str(i + 1), end=" ")
 
             # Matplotlib section
-            fig, ax = plt.subplots()
-            bins = np.arange(-20, 18, 1)
-
-            fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
-
-            n, bins, patches = ax.hist(fitnesses, bins=bins)
-
-            for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
-                if 16 <= bin_edge < 17:
-                    patch.set_facecolor('gold')  # Change color of specific bars
-
-            ax.set_xlabel('Fitness')
-            ax.set_ylabel('Frequency')
-            ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i + 1))
-
-            plt.savefig('generated/chromosomes_fitness_generation_' + str(i + 1) + '.png')
-            plt.close()
+            # fig, ax = plt.subplots()
+            # bins = np.arange(-20, 18, 1)
+            #
+            # fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
+            #
+            # n, bins, patches = ax.hist(fitnesses, bins=bins)
+            #
+            # for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
+            #     if 16 <= bin_edge < 17:
+            #         patch.set_facecolor('gold')  # Change color of specific bars
+            #
+            # ax.set_xlabel('Fitness')
+            # ax.set_ylabel('Frequency')
+            # ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i + 1))
+            #
+            # plt.savefig('generated/chromosomes_fitness_generation_' + str(i + 1) + '.png')
+            # plt.close()
             # Matplotlib section end
 
             chromosomes, end = generate_population_and_replace_old(chromosomes)
@@ -345,9 +359,9 @@ def initialize():
 initialize()
 
 # Testing failure rate untuk 100 test run case (Untuk mengecek mutasi order changing, add subtract single/double)
-# failure_rate = 0
-# for i in range(100):
-#     success = initialize()
-#     if not success:
-#         failure_rate += 1
-# print(failure_rate)
+failure_rate = 0
+for i in range(500):
+    success = initialize()
+    if not success:
+        failure_rate += 1
+print(failure_rate)
