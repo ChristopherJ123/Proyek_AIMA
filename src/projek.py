@@ -23,8 +23,8 @@ initial_weight_fc_sekondari = 1  # Fitness cost sekondari
 weight_fc_buruk = -10  # Fitness cost buruk
 
 # Main2 di parameter sini ya guys
-populasi_awal = 50
-max_population = 50
+populasi_awal = 40
+max_population = 20
 generasi = 100
 
 
@@ -313,23 +313,23 @@ def initialize():
             print("GENERASI KE-" + str(i + 1), end=" ")
 
             # Matplotlib section
-            # fig, ax = plt.subplots()
-            # bins = np.arange(-20, 18, 1)
-            #
-            # fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
-            #
-            # n, bins, patches = ax.hist(fitnesses, bins=bins)
-            #
-            # for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
-            #     if 16 <= bin_edge < 17:
-            #         patch.set_facecolor('gold')  # Change color of specific bars
-            #
-            # ax.set_xlabel('Fitness')
-            # ax.set_ylabel('Frequency')
-            # ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i + 1))
-            #
-            # plt.savefig('generated/chromosomes_fitness_generation_' + str(i + 1) + '.png')
-            # plt.close()
+            fig, ax = plt.subplots()
+            bins = np.arange(-20, 18, 1)
+
+            fitnesses = [calc_fitness(chromosome) for chromosome in chromosomes]
+
+            n, bins, patches = ax.hist(fitnesses, bins=bins)
+
+            for patch, bin_edge in zip(patches, bins[:-1]):  # bins[:-1] gives the left edges of bins
+                if 16 <= bin_edge < 17:
+                    patch.set_facecolor('gold')  # Change color of specific bars
+
+            ax.set_xlabel('Fitness')
+            ax.set_ylabel('Frequency')
+            ax.set_title('Histogram of Chromosomes Fitness Generation ' + str(i + 1))
+
+            plt.savefig('generated/chromosomes_fitness_generation_' + str(i + 1) + '.png')
+            plt.close()
             # Matplotlib section end
 
             chromosomes, end = generate_population_and_replace_old(chromosomes)
@@ -359,9 +359,9 @@ def initialize():
 initialize()
 
 # Testing failure rate untuk 100 test run case (Untuk mengecek mutasi order changing, add subtract single/double)
-failure_rate = 0
-for i in range(500):
-    success = initialize()
-    if not success:
-        failure_rate += 1
-print(failure_rate)
+# failure_rate = 0
+# for i in range(500):
+#     success = initialize()
+#     if not success:
+#         failure_rate += 1
+# print(failure_rate)
